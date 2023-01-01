@@ -30,14 +30,23 @@ std::ostream& operator<<(std::ostream& os, gebaeudetyp typ) {
 }
 
 bool check(int x, int y, int xl, int yb) { //TODO 1. Limit if Object is bigger than area; 2. if condition doesn't work properly, the first value throws belegt but it's free.
-  int a = xl - x;
-  int b = yb - y;
+
   int limit_x = xl + x;
-  int limit_y = yb + y;   
-  bool free;
-  for(int i = a; i > 0; i--) {
-    for (int j = b; j > 0; i--) {
-      if (constructionArea[a+i][b+j] == gebaeudetyp::Leer) {
+  int limit_y = yb + y;
+  int helper1 = -1;
+  int helper2 = -1;
+
+    // Überprüfen, ob das Gebäude innerhalb der Grenzen des Bereichs liegt
+  if (x + xl > length || y + yb > width) {
+    return false;
+  }
+
+  bool free = false;
+  for(int i = x; i < limit_x; i++) {
+    helper1++;
+    for (int j = y; j < limit_y; j++) {
+      helper2++;
+      if (constructionArea[x+helper1][y+helper2] == gebaeudetyp::Leer) {
         free = true;
       } else {
         return false;
@@ -89,12 +98,12 @@ void setBuilding() { //TODO It doesn't set the object in the right positions -->
         constructionArea[a+i][b+j] = gt;
       }
     }
-    //printf("%s wurde in Position %d %d geschrieben.", art, xPos, yPos);
+    printf("%s wurde in Position %d %d geschrieben. \n \n", art.c_str(), xPos, yPos);
   } else {
     printf("Das Feld %d %d ist leider schon belegt.", xPos, yPos);
   }
 }
-void ClearArea() {
+void ClearArea() { //works fine
   //wichtige Variablen deklarieren
   int x, y;
   std::cout << "Bitte Laengen Position eingeben" << std::endl;
@@ -103,7 +112,7 @@ void ClearArea() {
   std::cin >> y;
   constructionArea[x][y] = gebaeudetyp::Leer;
 }
-void printPlan() {
+void printPlan() { //works fine
     //Ausgabe des 2 Dimensionalen Vektors, dafür brauche ich aber eine Überladung des <<-Operators
     for (const auto& row : constructionArea) {
         for (const auto& element : row) {
@@ -112,10 +121,10 @@ void printPlan() {
         std::cout << std::endl;
     }
 }
-void Quit() {
+void Quit() { //works fine
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig geduld.";
 }
-int Menu() {
+int Menu() { //works fine
   //entweder rekursion oder while(true)
   //Anzeige eines Menues inklusive Funktionalitaet
   while(true) {
