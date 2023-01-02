@@ -87,7 +87,7 @@ void setBuilding() { //works fine
     std::cout << "Das Feld " << xPos << " " << yPos << " ist leider schon mit einem " << gebToStr(constructionArea[xPos][yPos]) << " belegt.";
   }
 }
-void ClearArea() { //works fine
+void ClearArea() {
   //wichtige Variablen deklarieren
   int x, y;
   std::cout << "Bitte Laengen Position eingeben" << std::endl;
@@ -96,7 +96,7 @@ void ClearArea() { //works fine
   std::cin >> y;
   constructionArea[x][y] = gebaeudetyp::Leer;
 }
-void printPlan() { //works fine
+void printPlan() {
     //Ausgabe des 2 Dimensionalen Vektors, dafür brauche ich aber eine Überladung des <<-Operators
     for (const auto& row : constructionArea) {
         for (const auto& element : row) {
@@ -105,7 +105,7 @@ void printPlan() { //works fine
         std::cout << std::endl;
     }
 }
-void Quit() { //works fine
+void Quit() {
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig geduld.";
 }
 int Menu() { //works fine
