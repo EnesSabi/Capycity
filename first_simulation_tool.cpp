@@ -1,9 +1,9 @@
 #include <iostream>
-#include <cstdlib>
 #include <vector>
 #include <array>
-#include <sstream>
 #include <string>
+
+//TODO optimizing -> check if Enum exists or usage of default enum
 
 //Enum Klassen
 enum class gebaeudetyp {Leer, Haus, Hochhaus, Tinyhaus, Doppelhaushaelfte}; 
@@ -14,48 +14,35 @@ enum class Option {SetBuilding, ClearArea, PrintPlan, Quit};
 std::vector<std::vector<gebaeudetyp>> constructionArea;
 int length, width;
 
-// Tabelle mit lesbaren Strings für jeden Wert des Enums, diese MUSS ZWINGEND mit dem Enum aktualisiert werden! Sowohl Strings als auch die Länge
-const std::array<const char*, 5> gebaeudetypStrings = {
+const std::array<const char*, 5> gebaeudetypStrings = { 
+  // Tabelle mit lesbaren Strings für jeden Wert des Enums, diese MUSS ZWINGEND mit dem Enum aktualisiert werden! Sowohl Strings als auch die Länge
   "Leer",
   "Haus",
   "Hochhaus",
   "Tinyhaus",
   "Doppelhaushaelfte"
 };
-// Operator wird generell überladen, also jede Überladung wird gecastet
-//Operatorüberladung für gebaudetyp und dessen ostream
-std::ostream& operator<<(std::ostream& os, gebaeudetyp typ) {
+std::ostream& operator<<(std::ostream& os, gebaeudetyp typ) { //works fine
+  // Operator wird generell überladen, also jede Überladung wird gecastet
+  //Operatorüberladung für gebaudetyp und dessen ostream
   os << gebaeudetypStrings[static_cast<std::size_t>(typ)];
   return os;
 }
-
-bool check(int x, int y, int xl, int yb) { //TODO 1. Limit if Object is bigger than area; 2. if condition doesn't work properly, the first value throws belegt but it's free.
-
-  int limit_x = xl + x;
-  int limit_y = yb + y;
-  int helper1 = -1;
-  int helper2 = -1;
-
-    // Überprüfen, ob das Gebäude innerhalb der Grenzen des Bereichs liegt
-  if (x + xl > length || y + yb > width) {
+bool check(int x, int y, int exLength, int exWidth) { //works fine
+  if (x + exLength > length || y + exWidth > width) {
     return false;
   }
 
-  bool free = false;
-  for(int i = x; i < limit_x; i++) {
-    helper1++;
-    for (int j = y; j < limit_y; j++) {
-      helper2++;
-      if (constructionArea[x+helper1][y+helper2] == gebaeudetyp::Leer) {
-        free = true;
-      } else {
+  for (int i = x; i < x + exLength; ++i) {
+    for (int j = y; j < y + exWidth; ++j) {
+      if (constructionArea[i][j] != gebaeudetyp::Leer) {
         return false;
       }
     }
   }
-  return free;
+  return true;
 }
-gebaeudetyp strToGeb(std::string art) {
+gebaeudetyp strToGeb(std::string art) { //works fine
   if (art == "Haus") {
     return gebaeudetyp::Haus;
   } else if (art == "Hochhaus") {
@@ -69,7 +56,10 @@ gebaeudetyp strToGeb(std::string art) {
     return gebaeudetyp::Leer;
   }
 }
-void setBuilding() { //TODO It doesn't set the object in the right positions --> Problem is maybe in checking, but needs to be tested;
+std::string gebToStr(gebaeudetyp typ) { //works fine
+  return gebaeudetypStrings[static_cast<std::size_t>(typ)];
+}
+void setBuilding() { //works fine
   // wichtige Variablen deklarieren
   std::string art;
   int xPos, yPos, exLength, exWidth;
@@ -85,22 +75,16 @@ void setBuilding() { //TODO It doesn't set the object in the right positions -->
   std::cout << "Bitte Breiten Position eingeben" << std::endl;
   std::cin >> yPos;
   
-  /*std::getline(std::cin, input);
-  std::cout << input << std::endl << std::endl;
-  std::stringstream ss(input);
-  ss >> art >> xPos >> yPos;*/
   if(check(xPos, yPos, exLength, exWidth)) {
-    int a = exLength - xPos;
-    int b = exWidth - yPos;
     gebaeudetyp gt = strToGeb(art);
-    for(int i = a; i > 0; i--) {
-      for (int j = b; j > 0; i--) {
-        constructionArea[a+i][b+j] = gt;
-      }
+    for (int i = xPos; i < xPos + exLength; ++i) {
+      for (int j = yPos; j < yPos + exWidth; ++j) {
+          constructionArea[i][j] = gt;
+        }
     }
-    printf("%s wurde in Position %d %d geschrieben. \n \n", art.c_str(), xPos, yPos);
+      std::cout << art << " wurde in x-Position " << xPos << " mit der Laenge " << exLength << " und in y-Position " << yPos << " mit der Breite " << exWidth << " geschrieben. \n \n";
   } else {
-    printf("Das Feld %d %d ist leider schon belegt.", xPos, yPos);
+    std::cout << "Das Feld " << xPos << " " << yPos << " ist leider schon mit einem " << gebToStr(constructionArea[xPos][yPos]) << " belegt.";
   }
 }
 void ClearArea() { //works fine
@@ -125,7 +109,6 @@ void Quit() { //works fine
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig geduld.";
 }
 int Menu() { //works fine
-  //entweder rekursion oder while(true)
   //Anzeige eines Menues inklusive Funktionalitaet
   while(true) {
     std::cout<< std::endl << "Bitte waehlen Sie eine Option aus:" << std::endl;
@@ -185,7 +168,6 @@ int main(int argc, char** argv) {
     /* Erstellen des Arrays mit Parameterlängen -> da dynamisch allozierter Speicher nicht bei Compilerzeit fest steht, muss ich auf vector umsteigen.*/
 
     constructionArea = std::vector<std::vector<gebaeudetyp>>(length, std::vector<gebaeudetyp>(width));
-
     Menu();
   return 0;
 }
