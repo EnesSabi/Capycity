@@ -3,31 +3,33 @@
 #include <array>
 #include <string>
 
+//TODO -> Ändern der Enums in 3 vom anfang; Implementieren der Klassenfunktionen
+
 //TODO optimizing -> check if Enum exists or usage of default enum
 //Enum deklarieren
 enum class Option {SetBuilding, ClearArea, PrintPlan, Quit};
 
-// Globale Variablen
+//Globale Variablen
 int length, width;
 
-// forward deklaration
+//forward deklaration
 class CapycitySim;
 
-
+//Klassen
 class CapycitySim {
-private:
+    private:
     enum gebaeudetyp {Leer, Haus, Hochhaus, Tinyhaus, Doppelhaushaelfte}; 
     std::vector<std::vector<gebaeudetyp>> constructionArea;
     int length, width;
     static constexpr std::array<const char*, 5> gebaeudetypStrings = { 
-        // Tabelle mit lesbaren Strings für jeden Wert des Enums, diese MUSS ZWINGEND mit dem Enum aktualisiert werden! Sowohl Strings als auch die Länge
+        //Tabelle mit lesbaren Strings für jeden Wert des Enums, diese MUSS ZWINGEND mit dem Enum aktualisiert werden! Sowohl Strings als auch die Länge
         "Leer",
         "Haus",
         "Hochhaus",
         "Tinyhaus",
         "Doppelhaushaelfte"
     };
-public:
+    public:
     CapycitySim(int length, int width) : length(length), width(width) {
         constructionArea = std::vector<std::vector<gebaeudetyp>>(length, std::vector<gebaeudetyp>(width));
     }
@@ -115,7 +117,40 @@ public:
         }
     }
 };
+    //Malzemeler
+class Malzeme {
+    private:
+        std::string isim;
+        double fiyat;
+    public:
+        Malzeme(std::string name, double preis) : fiyat(preis), isim(name) {}
+        std::string getIsim() const { return isim; }
+        std::string getFiyat() const { return fiyat; }
+}
+class Holz:public Malzeme {Holz(): Material("Holz", 10.0)};
+class Metall:public Malzeme {Metall(): Material("Metall", 20.0)};
+class Kunststoff:public Malzeme {Kunststoff(): Material("Kunststoff", 5.0)};
+    //Binalar
+class Bina {
+    private:
+        int fiyat;
+        std::string label;
+        std::vector<Malzeme*> malzemeler;
+    public:
+        Bina(int preis, std::string label): fiyat(preis), label(label) {};
+        void addMaterial(Malzeme* mal){malzemeler.push_back(mal);}
+        int getPrice() {
+            int price = fiyat;
+            for (auto m : malzemeler) {
+                price += m->getFiyat();
+            }
+            return price;
+            }
+        std::string getLabel() {return label;}
+}
+class Haus //TODO TODO TODO
 
+//Methoden
 void Quit() {
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig geduld.";
 }
@@ -157,6 +192,8 @@ void Menu(CapycitySim& sim) {
 
     }
 }
+
+//main Methode
 int main(int argc, char** argv) {
     // Überprüfen, ob Länge und Breite als Argumente übergeben wurden
     if (argc != 3) {
