@@ -2,6 +2,7 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <map>
 
 //TODO optimizing -> check if Enum exists or usage of default enum
 //Enum deklarieren
@@ -112,10 +113,10 @@ class CapycitySim {
             std::cout << std::endl;
         }
     }
-    void CapycitySim::printCost() {
+    void printCost() {
         std::cout << "Die Materialien aller Gebäude lauten wie folgt: " << std::endl;
         for (auto building : constructionArea) {
-            building->printMaterials();
+            //TODO
         }
     }
 };
@@ -150,10 +151,6 @@ class Bina {
             }
         std::string getLabel() {return label;}
         std::vector<Malzeme*> getMalzemeler() const { return malzemeler;}
-
-        virtual void printMaterials() const = 0; //Funzt nicht
-
-       
 };
 class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk"){
     for (int i = 0; i < 6; i++){addMaterial(new Holz());};
@@ -182,7 +179,7 @@ class Solarpanele:public Bina {public: Solarpanele():Bina(500,"Solarpanele"){
 
 //Methoden
 void Quit() {
-  std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig geduld.";
+  std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig Geduld.";
 }
 void Menu(CapycitySim& sim) {
     //Anzeige eines Menues inklusive Funktionalitaet
@@ -243,6 +240,18 @@ int main(int argc, char** argv) {
     /* Erstellen des Arrays mit Parameterlängen -> da dynamisch allozierter Speicher nicht bei Compilerzeit fest steht, muss ich auf vector umsteigen.*/
 
     CapycitySim sim(length, width);
+    std::map<Bina, std::vector<Malzeme>> gMap; //Key = Gebaeudeklasse; Value = Materialienvektor
+
+    Wasserkraftwerk wak;
+    Windkraftwerk wik;
+    Solarpanele sp;
+    gMap[wak] = {Holz(), Metall()};
+    gMap[wik] = {Holz(), Metall(), Kunststoff()};
+    gMap[sp] = {Metall(), Kunststoff()};
+
+    std::vector<Malzeme> mat = gMap[sp];
+
+    
     Menu(sim);
   return 0;
 }
