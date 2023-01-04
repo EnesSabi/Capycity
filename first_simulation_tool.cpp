@@ -3,14 +3,13 @@
 #include <array>
 #include <string>
 
-//TODO -> Ändern der Enums in 3 vom anfang; Implementieren der Klassenfunktionen
-
 //TODO optimizing -> check if Enum exists or usage of default enum
 //Enum deklarieren
-enum class Option {SetBuilding, ClearArea, PrintPlan, Quit};
+enum class Option {SetBuilding, ClearArea, PrintPlan, PrintCost, Quit};
 
 //Globale Variablen
 int length, width;
+
 
 //forward deklaration
 class CapycitySim;
@@ -18,16 +17,15 @@ class CapycitySim;
 //Klassen
 class CapycitySim {
     private:
-    enum gebaeudetyp {Leer, Haus, Hochhaus, Tinyhaus, Doppelhaushaelfte}; 
+    enum gebaeudetyp {Leer, Wasserkraftwerk, Windkraftwerk, Solarpanele}; 
     std::vector<std::vector<gebaeudetyp>> constructionArea;
     int length, width;
     static constexpr std::array<const char*, 5> gebaeudetypStrings = { 
         //Tabelle mit lesbaren Strings für jeden Wert des Enums, diese MUSS ZWINGEND mit dem Enum aktualisiert werden! Sowohl Strings als auch die Länge
         "Leer",
-        "Haus",
-        "Hochhaus",
-        "Tinyhaus",
-        "Doppelhaushaelfte"
+        "Wasserkraftwerk",
+        "Windkraftwerk",
+        "Solarpanele"
     };
     public:
     CapycitySim(int length, int width) : length(length), width(width) {
@@ -54,14 +52,12 @@ class CapycitySim {
     return true;
     }
     gebaeudetyp strToGeb(std::string art) { //works fine
-        if (art == "Haus") {
-            return gebaeudetyp::Haus;
-        } else if (art == "Hochhaus") {
-            return gebaeudetyp::Hochhaus;
-        } else if (art == "Tinyhaus") {
-            return gebaeudetyp::Tinyhaus;
-        } else if (art == "Doppelhaushaelfte") {
-            return gebaeudetyp::Doppelhaushaelfte;
+        if (art == "Wasserkraftwerk") {
+            return gebaeudetyp::Wasserkraftwerk;
+        } else if (art == "Windkraftwerk") {
+            return gebaeudetyp::Windkraftwerk;
+        } else if (art == "Solarpanele") {
+            return gebaeudetyp::Solarpanele;
         } else {
             // Keine passende Art gefunden
             return gebaeudetyp::Leer;
@@ -116,6 +112,12 @@ class CapycitySim {
             std::cout << std::endl;
         }
     }
+    void CapycitySim::printCost() {
+        std::cout << "Die Materialien aller Gebäude lauten wie folgt: " << std::endl;
+        for (auto building : constructionArea) {
+            building->printMaterials();
+        }
+    }
 };
     //Malzemeler
 class Malzeme {
@@ -125,11 +127,11 @@ class Malzeme {
     public:
         Malzeme(std::string name, double preis) : fiyat(preis), isim(name) {}
         std::string getIsim() const { return isim; }
-        std::string getFiyat() const { return fiyat; }
-}
-class Holz:public Malzeme {Holz(): Material("Holz", 10.0)};
-class Metall:public Malzeme {Metall(): Material("Metall", 20.0)};
-class Kunststoff:public Malzeme {Kunststoff(): Material("Kunststoff", 5.0)};
+        double getFiyat() const { return fiyat; }
+};
+class Holz:public Malzeme {public:Holz(): Malzeme("Holz", 10.0){}};
+class Metall:public Malzeme {public:Metall(): Malzeme("Metall", 20.0){}};
+class Kunststoff:public Malzeme {public:Kunststoff(): Malzeme("Kunststoff", 5.0){}};
     //Binalar
 class Bina {
     private:
@@ -147,8 +149,36 @@ class Bina {
             return price;
             }
         std::string getLabel() {return label;}
-}
-class Haus //TODO TODO TODO
+        std::vector<Malzeme*> getMalzemeler() const { return malzemeler;}
+
+        virtual void printMaterials() const = 0; //Funzt nicht
+
+       
+};
+class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk"){
+    for (int i = 0; i < 6; i++){addMaterial(new Holz());};
+    for (int i = 0; i < 2; i++){addMaterial(new Metall());};
+    }
+    void printMaterials() { // uebel der Muell!
+        std::vector<Malzeme*> Dinge = getMalzemeler();
+        for (auto m : Dinge) {
+            
+        }
+        
+
+    }
+};
+class Windkraftwerk:public Bina {public: Windkraftwerk():Bina(2000, "Windkraftwerk"){
+    for (int i = 0; i < 1; i++){addMaterial(new Holz());};
+    for (int i = 0; i < 8; i++){addMaterial(new Metall());};
+    for (int i = 0; i < 2; i++){addMaterial(new Kunststoff());};
+    }
+};
+class Solarpanele:public Bina {public: Solarpanele():Bina(500,"Solarpanele"){
+    for (int i = 0; i < 3; i++){addMaterial(new Metall());};
+    for (int i = 0; i < 5; i++){addMaterial(new Kunststoff());};
+    }
+};
 
 //Methoden
 void Quit() {
@@ -161,7 +191,8 @@ void Menu(CapycitySim& sim) {
         std::cout << "1. Gebaeude setzen" << std::endl;
         std::cout << "2. Bereich loeschen" << std::endl;
         std::cout << "3. Bauplan ausgeben" << std::endl;
-        std::cout << "4. Programm beenden" << std::endl;
+        std::cout << "4. Kosten ausgeben" << std::endl;
+        std::cout << "5. Programm beenden" << std::endl;
         std::cout << std::endl;
 
         // Einlesen der Auswahl
@@ -180,6 +211,9 @@ void Menu(CapycitySim& sim) {
                 break;
             case Option::PrintPlan:
                 sim.printPlan();
+                break;
+            case Option::PrintCost:
+                sim.printCost();
                 break;
             case Option::Quit:
                 Quit();
