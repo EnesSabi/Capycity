@@ -8,12 +8,15 @@
 //Enum deklarieren
 enum class Option {SetBuilding, ClearArea, PrintPlan, PrintCost, Quit};
 
-//Globale Variablen
-int length, width;
-
-
 //forward deklaration
 class CapycitySim;
+class Malzeme;
+class Bina;
+
+//Globale Variablen
+int length, width;
+std::vector<Malzeme> mat;
+std::map<Bina, std::vector<Malzeme>> gMap; //Key = Gebaeudeklasse; Value = Materialienvektor
 
 //Klassen
 class CapycitySim {
@@ -113,10 +116,13 @@ class CapycitySim {
             std::cout << std::endl;
         }
     }
-    void printCost() {
-        std::cout << "Die Materialien aller Gebäude lauten wie folgt: " << std::endl;
-        for (auto building : constructionArea) {
-            //TODO
+    void printCost() { //Not integrated with everything, but works for just one
+        for (auto e : gebaeudetypStrings) {
+            int prices = 0;
+            std::cout << "Die Materialien kosten: " << e << std::endl;
+            mat = gMap[e];
+            for (auto m : mat) { prices += m.getMiktar(); }
+            std::cout << prices << std::endl;
         }
     }
 };
@@ -125,14 +131,21 @@ class Malzeme {
     private:
         std::string isim;
         double fiyat;
+        int miktar;
     public:
         Malzeme(std::string name, double preis) : fiyat(preis), isim(name) {}
         std::string getIsim() const { return isim; }
         double getFiyat() const { return fiyat; }
+        void setMiktar(int menge) { this->miktar = menge; }
+        int getMiktar() const { return miktar; }
+        //Operatorüberladung
+        friend std::ostream& operator<<(std::ostream& os, const Malzeme& m) {return os << "Das Material " << m.getIsim() << " hat die Kosten " << m.getFiyat() << ".";}
+        bool operator<=(const Malzeme& other) {return this->fiyat <= other.fiyat;}
 };
-class Holz:public Malzeme {public:Holz(): Malzeme("Holz", 10.0){}};
-class Metall:public Malzeme {public:Metall(): Malzeme("Metall", 20.0){}};
-class Kunststoff:public Malzeme {public:Kunststoff(): Malzeme("Kunststoff", 5.0){}};
+class Holz:
+public Malzeme {public:Holz(int menge): Malzeme("Holz", 10.0) {this->setMiktar(menge);}};
+class Metall:public Malzeme {public:Metall(int menge): Malzeme("Metall", 20.0) {this->setMiktar(menge);}};
+class Kunststoff:public Malzeme {public:Kunststoff(int menge): Malzeme("Kunststoff", 5.0){this->setMiktar(menge);}};
     //Binalar
 class Bina {
     private:
@@ -151,33 +164,24 @@ class Bina {
             }
         std::string getLabel() {return label;}
         std::vector<Malzeme*> getMalzemeler() const { return malzemeler;}
+        //Operatorüberladung
+        bool operator<(const Bina& other) const {return this->fiyat < other.fiyat;}
+        bool operator==(const Bina& other) const {return this->fiyat == other.fiyat;}
 };
-class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk"){
-    for (int i = 0; i < 6; i++){addMaterial(new Holz());};
-    for (int i = 0; i < 2; i++){addMaterial(new Metall());};
-    }
-    void printMaterials() { // uebel der Muell!
-        std::vector<Malzeme*> Dinge = getMalzemeler();
-        for (auto m : Dinge) {
-            
-        }
-        
-
-    }
-};
-class Windkraftwerk:public Bina {public: Windkraftwerk():Bina(2000, "Windkraftwerk"){
-    for (int i = 0; i < 1; i++){addMaterial(new Holz());};
-    for (int i = 0; i < 8; i++){addMaterial(new Metall());};
-    for (int i = 0; i < 2; i++){addMaterial(new Kunststoff());};
-    }
-};
-class Solarpanele:public Bina {public: Solarpanele():Bina(500,"Solarpanele"){
-    for (int i = 0; i < 3; i++){addMaterial(new Metall());};
-    for (int i = 0; i < 5; i++){addMaterial(new Kunststoff());};
-    }
-};
-
+class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk") {}};
+class Windkraftwerk:public Bina {public: Windkraftwerk():Bina(2000, "Windkraftwerk"){}};
+class Solarpanele:public Bina {public: Solarpanele():Bina(500,"Solarpanele"){}};
 //Methoden
+void Mapping() {
+    //Materialieninput
+    Wasserkraftwerk wak;
+    Windkraftwerk wik;
+    Solarpanele sp;
+    // Hier müssen die Materialien für die 
+    gMap[wak] = {Holz(5), Metall(3)};
+    gMap[wik] = {Holz(2), Metall(3), Kunststoff(4)};
+    gMap[sp] = {Metall(2), Kunststoff(7)};
+};
 void Quit() {
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig Geduld.";
 }
@@ -240,18 +244,6 @@ int main(int argc, char** argv) {
     /* Erstellen des Arrays mit Parameterlängen -> da dynamisch allozierter Speicher nicht bei Compilerzeit fest steht, muss ich auf vector umsteigen.*/
 
     CapycitySim sim(length, width);
-    std::map<Bina, std::vector<Malzeme>> gMap; //Key = Gebaeudeklasse; Value = Materialienvektor
-
-    Wasserkraftwerk wak;
-    Windkraftwerk wik;
-    Solarpanele sp;
-    gMap[wak] = {Holz(), Metall()};
-    gMap[wik] = {Holz(), Metall(), Kunststoff()};
-    gMap[sp] = {Metall(), Kunststoff()};
-
-    std::vector<Malzeme> mat = gMap[sp];
-
-    
     Menu(sim);
   return 0;
 }
