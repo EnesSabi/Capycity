@@ -22,9 +22,10 @@ std::map<Bina, std::vector<Malzeme>> gMap; //Key = Gebaeudeklasse; Value = Mater
 class CapycitySim {
     private:
     enum gebaeudetyp {Leer, Wasserkraftwerk, Windkraftwerk, Solarpanele}; 
+    static std::array<Bina*, 4> BinArr;
     std::vector<std::vector<gebaeudetyp>> constructionArea;
     int length, width;
-    static constexpr std::array<const char*, 5> gebaeudetypStrings = { 
+    static constexpr std::array<const char*, 4> gebaeudetypStrings = { 
         //Tabelle mit lesbaren Strings für jeden Wert des Enums, diese MUSS ZWINGEND mit dem Enum aktualisiert werden! Sowohl Strings als auch die Länge
         "Leer",
         "Wasserkraftwerk",
@@ -69,6 +70,20 @@ class CapycitySim {
     }
     std::string gebToStr(gebaeudetyp typ) { //works fine
         return gebaeudetypStrings[static_cast<std::size_t>(typ)];
+    }
+    friend Bina strToBina(std::string art) {
+        if (art == "Wasserkraftwerk") {
+            return BinArr[0];
+        } else if (art == "Windkraftwerk") {
+            return BinArr[1];
+        } else if (art == "Solarpanele") {
+            return BinArr[2];
+        } else if (art == "Leer") {
+            return BinArr[3];
+        } else {
+            // Keine passende Art gefunden
+            return BinArr[3];
+        }
     }
     void setBuilding() { //works fine
         // wichtige Variablen deklarieren
@@ -120,7 +135,7 @@ class CapycitySim {
         for (auto e : gebaeudetypStrings) {
             int prices = 0;
             std::cout << "Die Materialien kosten: " << e << std::endl;
-            mat = gMap[e];
+            mat = gMap[strToBina(e)];
             for (auto m : mat) { prices += m.getMiktar(); }
             std::cout << prices << std::endl;
         }
@@ -171,16 +186,25 @@ class Bina {
 class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk") {}};
 class Windkraftwerk:public Bina {public: Windkraftwerk():Bina(2000, "Windkraftwerk"){}};
 class Solarpanele:public Bina {public: Solarpanele():Bina(500,"Solarpanele"){}};
+class Leer:public Bina {public: Solarpanele():Bina(0,"Leer"){}};
+
 //Methoden
 void Mapping() {
     //Materialieninput
     Wasserkraftwerk wak;
     Windkraftwerk wik;
     Solarpanele sp;
+    Leer l;
     // Hier müssen die Materialien für die 
     gMap[wak] = {Holz(5), Metall(3)};
     gMap[wik] = {Holz(2), Metall(3), Kunststoff(4)};
     gMap[sp] = {Metall(2), Kunststoff(7)};
+    gMap[l] = {};
+    //Array inititalisierung fuer erleichterten Zugriff
+    BinArr[0] = wak;
+    BinArr[1] = wik;
+    BinArr[2] = sp;
+    BinArr[3] = l;
 };
 void Quit() {
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig Geduld.";
@@ -244,6 +268,7 @@ int main(int argc, char** argv) {
     /* Erstellen des Arrays mit Parameterlängen -> da dynamisch allozierter Speicher nicht bei Compilerzeit fest steht, muss ich auf vector umsteigen.*/
 
     CapycitySim sim(length, width);
+    Mapping();
     Menu(sim);
   return 0;
 }
