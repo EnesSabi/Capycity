@@ -21,68 +21,55 @@ std::map<Bina, std::vector<Malzeme>> gMap; //Key = Gebaeudeklasse; Value = Mater
 //Klassen
 class CapycitySim {
     private:
-    enum gebaeudetyp {Leer, Wasserkraftwerk, Windkraftwerk, Solarpanele}; 
-    static std::array<Bina*, 4> BinArr;
-    std::vector<std::vector<gebaeudetyp>> constructionArea;
-    int length, width;
-    static constexpr std::array<const char*, 4> gebaeudetypStrings = { 
-        //Tabelle mit lesbaren Strings für jeden Wert des Enums, diese MUSS ZWINGEND mit dem Enum aktualisiert werden! Sowohl Strings als auch die Länge
-        "Leer",
-        "Wasserkraftwerk",
-        "Windkraftwerk",
-        "Solarpanele"
-    };
+        enum gebaeudetyp {Leer, Wasserkraftwerk, Windkraftwerk, Solarpanele};
+        std::vector<std::vector<gebaeudetyp>> constructionArea;
+        int length, width;
+        std::map<std::string, gebaeudetyp> stringToGeb;
+        std::map<gebaeudetyp, std::string> gebToString;
     public:
     CapycitySim(int length, int width) : length(length), width(width) {
         constructionArea = std::vector<std::vector<gebaeudetyp>>(length, std::vector<gebaeudetyp>(width));
-    }
+        //initialize the maps
+        stringToGeb["Leer"] = gebaeudetyp::Leer;
+        stringToGeb["Wasserkraftwerk"] = gebaeudetyp::Wasserkraftwerk;
+        stringToGeb["Windkraftwerk"] = gebaeudetyp::Windkraftwerk;
+        stringToGeb["Solarpanele"] = gebaeudetyp::Solarpanele;
 
-    friend std::ostream& operator<<(std::ostream& os, gebaeudetyp typ) {
-        // Operatorüberladung für gebaudetyp und dessen ostream
-        os << gebaeudetypStrings[static_cast<std::size_t>(typ)];
-        return os;
+        gebToString[gebaeudetyp::Leer] = "Leer";
+        gebToString[gebaeudetyp::Wasserkraftwerk] = "Wasserkraftwerk";
+        gebToString[gebaeudetyp::Windkraftwerk] = "Windkraftwerk";
+        gebToString[gebaeudetyp::Solarpanele] = "Solarpanele";
     }
     bool check(int x, int y, int exLength, int exWidth) {
-    if (x + exLength > length || y + exWidth > width) {
-        return false;
-    }
-
-    for (int i = x; i < x + exLength; ++i) {
-        for (int j = y; j < y + exWidth; ++j) {
-            if (constructionArea[i][j] != gebaeudetyp::Leer) {
-                return false;
+        if (x + exLength > length || y + exWidth > width) {
+            return false;
+        }
+        int free_cells = 0;
+        for (int i = x; i < x + exLength; ++i) {
+            for (int j = y; j < y + exWidth; ++j) {
+                if (constructionArea[i][j] == gebaeudetyp::Leer) {
+                    ++free_cells;
+                }
             }
         }
+        return free_cells == exLength *exWidth;
     }
-    return true;
-    }
-    gebaeudetyp strToGeb(std::string art) { //works fine
-        if (art == "Wasserkraftwerk") {
-            return gebaeudetyp::Wasserkraftwerk;
-        } else if (art == "Windkraftwerk") {
-            return gebaeudetyp::Windkraftwerk;
-        } else if (art == "Solarpanele") {
-            return gebaeudetyp::Solarpanele;
+    //string to gebaeudetyp
+    gebaeudetyp strToGeb(const std::string &art) {
+        auto it = stringToGeb.find(art);
+        if (it != stringToGeb.end()) {
+            return it->second;
         } else {
             // Keine passende Art gefunden
             return gebaeudetyp::Leer;
         }
     }
-    std::string gebToStr(gebaeudetyp typ) { //works fine
-        return gebaeudetypStrings[static_cast<std::size_t>(typ)];
-    }
-    friend Bina strToBina(std::string art) {
-        if (art == "Wasserkraftwerk") {
-            return BinArr[0];
-        } else if (art == "Windkraftwerk") {
-            return BinArr[1];
-        } else if (art == "Solarpanele") {
-            return BinArr[2];
-        } else if (art == "Leer") {
-            return BinArr[3];
+    std::string gebToStr(gebaeudetyp typ) {
+        auto it = gebToString.find(typ);
+        if (it != gebToString.end()) {
+            return it->second;
         } else {
-            // Keine passende Art gefunden
-            return BinArr[3];
+            return "Unknow";
         }
     }
     void setBuilding() { //works fine
@@ -132,13 +119,20 @@ class CapycitySim {
         }
     }
     void printCost() { //Not integrated with everything, but works for just one
-        for (auto e : gebaeudetypStrings) {
-            int prices = 0;
-            std::cout << "Die Materialien kosten: " << e << std::endl;
-            mat = gMap[strToBina(e)];
-            for (auto m : mat) { prices += m.getMiktar(); }
-            std::cout << prices << std::endl;
+        std::map<gebaeudetyp, double> costPerUnit;
+        
+        costPerUnit[gebaeudetyp::Leer] = 0;
+        costPerUnit[gebaeudetyp::Wasserkraftwerk] = 100;
+        costPerUnit[gebaeudetyp::Windkraftwerk] = 50;
+        costPerUnit[gebaeudetyp::Solarpanele] = 75;
+
+        double totalCost = 0;
+        for (int i = 0; i < length; ++i) {
+            for (int j = 0; j < width; ++j) {
+                totalCost += costPerUnit[constructionArea[i][j]];
+            }
         }
+        std::cout << "Die Gesamtkosten betragen: " << totalCost << std::endl;
     }
 };
     //Malzemeler
@@ -157,8 +151,7 @@ class Malzeme {
         friend std::ostream& operator<<(std::ostream& os, const Malzeme& m) {return os << "Das Material " << m.getIsim() << " hat die Kosten " << m.getFiyat() << ".";}
         bool operator<=(const Malzeme& other) {return this->fiyat <= other.fiyat;}
 };
-class Holz:
-public Malzeme {public:Holz(int menge): Malzeme("Holz", 10.0) {this->setMiktar(menge);}};
+class Holz:public Malzeme {public:Holz(int menge): Malzeme("Holz", 10.0) {this->setMiktar(menge);}};
 class Metall:public Malzeme {public:Metall(int menge): Malzeme("Metall", 20.0) {this->setMiktar(menge);}};
 class Kunststoff:public Malzeme {public:Kunststoff(int menge): Malzeme("Kunststoff", 5.0){this->setMiktar(menge);}};
     //Binalar
@@ -186,7 +179,7 @@ class Bina {
 class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk") {}};
 class Windkraftwerk:public Bina {public: Windkraftwerk():Bina(2000, "Windkraftwerk"){}};
 class Solarpanele:public Bina {public: Solarpanele():Bina(500,"Solarpanele"){}};
-class Leer:public Bina {public: Solarpanele():Bina(0,"Leer"){}};
+class Leer:public Bina {public: Leer():Bina(0,"Leer"){}};
 
 //Methoden
 void Mapping() {
@@ -200,11 +193,6 @@ void Mapping() {
     gMap[wik] = {Holz(2), Metall(3), Kunststoff(4)};
     gMap[sp] = {Metall(2), Kunststoff(7)};
     gMap[l] = {};
-    //Array inititalisierung fuer erleichterten Zugriff
-    BinArr[0] = wak;
-    BinArr[1] = wik;
-    BinArr[2] = sp;
-    BinArr[3] = l;
 };
 void Quit() {
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig Geduld.";
