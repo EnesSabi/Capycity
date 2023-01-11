@@ -12,10 +12,15 @@ enum class Option {SetBuilding, ClearArea, PrintPlan, PrintCost, Quit};
 class CapycitySim;
 class Malzeme;
 class Bina;
+class Wasserkraftwerk;
+class Windkraftwerk;
+class Solarpanele;
+class Leer;
 
 //Globale Variablen
 int length, width;
 std::vector<Malzeme> mat;
+Bina buildArr[4] = {NULL, NULL, NULL, NULL};
 std::map<Bina, std::vector<Malzeme>> gMap; //Key = Gebaeudeklasse; Value = Materialienvektor
 
 //Klassen
@@ -26,10 +31,11 @@ class CapycitySim {
         int length, width;
         std::map<std::string, gebaeudetyp> stringToGeb;
         std::map<gebaeudetyp, std::string> gebToString;
+        std::map<gebaeudetyp, Bina*> gebToBina;
     public:
     CapycitySim(int length, int width) : length(length), width(width) {
         constructionArea = std::vector<std::vector<gebaeudetyp>>(length, std::vector<gebaeudetyp>(width));
-        //initialize the maps
+        // Initialisieren der Maps
         stringToGeb["Leer"] = gebaeudetyp::Leer;
         stringToGeb["Wasserkraftwerk"] = gebaeudetyp::Wasserkraftwerk;
         stringToGeb["Windkraftwerk"] = gebaeudetyp::Windkraftwerk;
@@ -39,7 +45,13 @@ class CapycitySim {
         gebToString[gebaeudetyp::Wasserkraftwerk] = "Wasserkraftwerk";
         gebToString[gebaeudetyp::Windkraftwerk] = "Windkraftwerk";
         gebToString[gebaeudetyp::Solarpanele] = "Solarpanele";
+
+        gebToString[gebaeudetyp::Leer] = Leer();
+        gebToString[gebaeudetyp::Wasserkraftwerk] = &wak;
+        gebToString[gebaeudetyp::Windkraftwerk] = &wik;
+        gebToString[gebaeudetyp::Solarpanele] = &sp;
     }
+
     bool check(int x, int y, int exLength, int exWidth) {
         if (x + exLength > length || y + exWidth > width) {
             return false;
@@ -113,26 +125,30 @@ class CapycitySim {
         //Ausgabe des 2 Dimensionalen Vektors, dafür brauche ich aber eine Überladung des <<-Operators
         for (const auto& row : constructionArea) {
             for (const auto& element : row) {
-                std::cout << element << " ";
+                std::cout << gebToStr(element) << " ";
             }
             std::cout << std::endl;
         }
     }
-    void printCost() { //Not integrated with everything, but works for just one
-        std::map<gebaeudetyp, double> costPerUnit;
-        
-        costPerUnit[gebaeudetyp::Leer] = 0;
-        costPerUnit[gebaeudetyp::Wasserkraftwerk] = 100;
-        costPerUnit[gebaeudetyp::Windkraftwerk] = 50;
-        costPerUnit[gebaeudetyp::Solarpanele] = 75;
-
+    void printCost() {
         double totalCost = 0;
         for (int i = 0; i < length; ++i) {
             for (int j = 0; j < width; ++j) {
-                totalCost += costPerUnit[constructionArea[i][j]];
+                Bina b = constructionArea[i][j];
+                totalCost += costReturn(b);
             }
         }
         std::cout << "Die Gesamtkosten betragen: " << totalCost << std::endl;
+    }
+    int costReturn(gebaeudetyp gt) {
+        Bina *b = gebToBina[gt];  // hier finde ich den key der gMap
+        std::vector<Malzeme> materials = gMap.at(*b); // hier verwendet ich die key, um den vector zu bekommen
+        int totalCost = 0;
+        std::vector<Malzeme> materials = gMap.at(b);
+        for(Malzeme m : materials) {
+            totalCost += m.getFiyat;
+        }
+        return totalCost;
     }
 };
     //Malzemeler
@@ -174,7 +190,7 @@ class Bina {
         std::vector<Malzeme*> getMalzemeler() const { return malzemeler;}
         //Operatorüberladung
         bool operator<(const Bina& other) const {return this->fiyat < other.fiyat;}
-        bool operator==(const Bina& other) const {return this->fiyat == other.fiyat;}
+        bool operator==(const Bina& other) const {return this->label == other.label;}
 };
 class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk") {}};
 class Windkraftwerk:public Bina {public: Windkraftwerk():Bina(2000, "Windkraftwerk"){}};
@@ -183,12 +199,8 @@ class Leer:public Bina {public: Leer():Bina(0,"Leer"){}};
 
 //Methoden
 void Mapping() {
-    //Materialieninput
-    Wasserkraftwerk wak;
-    Windkraftwerk wik;
-    Solarpanele sp;
-    Leer l;
-    // Hier müssen die Materialien für die 
+    // Hier müssen die Materialien für ein Feld eingetragen werden. Also wie viel Materialien braucht man für ein Feld von Wasserkraftwerk zum Beispiel;
+
     gMap[wak] = {Holz(5), Metall(3)};
     gMap[wik] = {Holz(2), Metall(3), Kunststoff(4)};
     gMap[sp] = {Metall(2), Kunststoff(7)};
@@ -254,6 +266,11 @@ int main(int argc, char** argv) {
     std::cout << "Laenge des Baubereichs: " << length << std::endl;
     std::cout << "Breite des Baubereichs: " << width << std::endl << std::endl;
     /* Erstellen des Arrays mit Parameterlängen -> da dynamisch allozierter Speicher nicht bei Compilerzeit fest steht, muss ich auf vector umsteigen.*/
+
+    buildArr[0] = Wasserkraftwerk wak;
+    buildArr[1] = Windkraftwerk wik;
+    buildArr[2] = Solarpanele sp;
+    buildArr[3] = Leer l;
 
     CapycitySim sim(length, width);
     Mapping();
