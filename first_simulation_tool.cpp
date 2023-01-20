@@ -20,8 +20,45 @@ class Leer;
 //Globale Variablen
 int length, width;
 std::vector<Malzeme> mat;
-Bina buildArr[4] = {NULL, NULL, NULL, NULL};
 std::map<Bina, std::vector<Malzeme>> gMap; //Key = Gebaeudeklasse; Value = Materialienvektor
+
+
+class Malzeme {
+    private:
+        std::string isim;
+        double fiyat;
+        int miktar;
+    public:
+        Malzeme(std::string name, double preis) : fiyat(preis), isim(name) {}
+        std::string getIsim() const { return isim; }
+        double getFiyat() const { return fiyat; }
+        void setMiktar(int menge) { this->miktar = menge; }
+        int getMiktar() const { return miktar; }
+        //Operatorüberladung
+        friend std::ostream& operator<<(std::ostream& os, const Malzeme& m) {return os << "Das Material " << m.getIsim() << " hat die Kosten " << m.getFiyat() << ".";}
+        bool operator<=(const Malzeme& other) {return this->fiyat <= other.fiyat;}
+};
+class Bina {
+    private:
+        int fiyat;
+        std::string label;
+        std::vector<Malzeme*> malzemeler;
+    public:
+        Bina(int preis, std::string label): fiyat(preis), label(label) {};
+        void addMaterial(Malzeme* mal){malzemeler.push_back(mal);}
+        int getPrice() {
+            int price = fiyat;
+            for (auto m : malzemeler) {
+                price += m->getFiyat();
+            }
+            return price;
+            }
+        std::string getLabel() {return label;}
+        std::vector<Malzeme*> getMalzemeler() const { return malzemeler;}
+        //Operatorüberladung
+        bool operator<(const Bina& other) const {return this->fiyat < other.fiyat;}
+        bool operator==(const Bina& other) const {return this->label == other.label;}
+};
 
 //Klassen
 class CapycitySim {
@@ -31,7 +68,7 @@ class CapycitySim {
         int length, width;
         std::map<std::string, gebaeudetyp> stringToGeb;
         std::map<gebaeudetyp, std::string> gebToString;
-        std::map<gebaeudetyp, Bina*> gebToBina;
+        std::map<gebaeudetyp, Bina> gebToBinalar;
     public:
     CapycitySim(int length, int width) : length(length), width(width) {
         constructionArea = std::vector<std::vector<gebaeudetyp>>(length, std::vector<gebaeudetyp>(width));
@@ -45,13 +82,10 @@ class CapycitySim {
         gebToString[gebaeudetyp::Wasserkraftwerk] = "Wasserkraftwerk";
         gebToString[gebaeudetyp::Windkraftwerk] = "Windkraftwerk";
         gebToString[gebaeudetyp::Solarpanele] = "Solarpanele";
-
-        gebToString[gebaeudetyp::Leer] = Leer();
-        gebToString[gebaeudetyp::Wasserkraftwerk] = &wak;
-        gebToString[gebaeudetyp::Windkraftwerk] = &wik;
-        gebToString[gebaeudetyp::Solarpanele] = &sp;
     }
-
+    gebaeudetyp getSol() {
+        return gebaeudetyp::Solarpanele;
+    }
     bool check(int x, int y, int exLength, int exWidth) {
         if (x + exLength > length || y + exWidth > width) {
             return false;
@@ -66,7 +100,6 @@ class CapycitySim {
         }
         return free_cells == exLength *exWidth;
     }
-    //string to gebaeudetyp
     gebaeudetyp strToGeb(const std::string &art) {
         auto it = stringToGeb.find(art);
         if (it != stringToGeb.end()) {
@@ -83,6 +116,9 @@ class CapycitySim {
         } else {
             return "Unknow";
         }
+    }
+    Bina gebToBina(gebaeudetyp typ) {
+        return gebToBinalar.find(typ)->second;
     }
     void setBuilding() { //works fine
         // wichtige Variablen deklarieren
@@ -109,7 +145,9 @@ class CapycitySim {
             }
             std::cout << art << " wurde in x-Position " << xPos << " mit der Laenge " << exLength << " und in y-Position " << yPos << " mit der Breite " << exWidth << " geschrieben. \n \n";
         } else {
-            std::cout << "Das Feld " << xPos << " " << yPos << " ist leider schon mit einem " << gebToStr(constructionArea[xPos][yPos]) << " belegt.";
+            std::cout << "Das Feld " << xPos << " " << yPos << " ist leider schon belegt.";
+            // "mit einem " << gebToStr(constructionArea[xPos][yPos]) <<
+             
         }
     }
     void ClearArea() { //works fine
@@ -134,77 +172,65 @@ class CapycitySim {
         double totalCost = 0;
         for (int i = 0; i < length; ++i) {
             for (int j = 0; j < width; ++j) {
-                Bina b = constructionArea[i][j];
-                totalCost += costReturn(b);
+                gebaeudetyp gt = constructionArea[i][j];
+                totalCost += costReturn(gt);
             }
         }
         std::cout << "Die Gesamtkosten betragen: " << totalCost << std::endl;
     }
     int costReturn(gebaeudetyp gt) {
-        Bina *b = gebToBina[gt];  // hier finde ich den key der gMap
-        std::vector<Malzeme> materials = gMap.at(*b); // hier verwendet ich die key, um den vector zu bekommen
+        int tmp = 0;
+        switch (gt) {
+        case gebaeudetyp::Leer:
+            tmp = 0;
+            break;
+        case gebaeudetyp::Wasserkraftwerk:
+            tmp = 2;
+            break;
+        case gebaeudetyp::Windkraftwerk:
+            tmp = 3;
+            break;
+        case gebaeudetyp::Solarpanele:
+            tmp = 1;
+            break;            
+        default:
+            tmp = 0;
+            break;
+        }
+        auto it = gMap.find(gebToBina(gt));
+        if(it == gMap.end()) {return 0;}
+        std::vector<Malzeme> materials = it->second; // hier verwendet ich die key, um den vector zu bekommen
         int totalCost = 0;
-        std::vector<Malzeme> materials = gMap.at(b);
         for(Malzeme m : materials) {
-            totalCost += m.getFiyat;
+            std::cout << m.getIsim();
+            totalCost += m.getFiyat();
         }
         return totalCost;
     }
 };
     //Malzemeler
-class Malzeme {
-    private:
-        std::string isim;
-        double fiyat;
-        int miktar;
+class Holz:public Malzeme {
     public:
-        Malzeme(std::string name, double preis) : fiyat(preis), isim(name) {}
-        std::string getIsim() const { return isim; }
-        double getFiyat() const { return fiyat; }
-        void setMiktar(int menge) { this->miktar = menge; }
-        int getMiktar() const { return miktar; }
-        //Operatorüberladung
-        friend std::ostream& operator<<(std::ostream& os, const Malzeme& m) {return os << "Das Material " << m.getIsim() << " hat die Kosten " << m.getFiyat() << ".";}
-        bool operator<=(const Malzeme& other) {return this->fiyat <= other.fiyat;}
+    Holz(int menge): Malzeme("Holz", 10.0) {
+        this->setMiktar(menge);
+    }
 };
-class Holz:public Malzeme {public:Holz(int menge): Malzeme("Holz", 10.0) {this->setMiktar(menge);}};
 class Metall:public Malzeme {public:Metall(int menge): Malzeme("Metall", 20.0) {this->setMiktar(menge);}};
 class Kunststoff:public Malzeme {public:Kunststoff(int menge): Malzeme("Kunststoff", 5.0){this->setMiktar(menge);}};
     //Binalar
-class Bina {
-    private:
-        int fiyat;
-        std::string label;
-        std::vector<Malzeme*> malzemeler;
-    public:
-        Bina(int preis, std::string label): fiyat(preis), label(label) {};
-        void addMaterial(Malzeme* mal){malzemeler.push_back(mal);}
-        int getPrice() {
-            int price = fiyat;
-            for (auto m : malzemeler) {
-                price += m->getFiyat();
-            }
-            return price;
-            }
-        std::string getLabel() {return label;}
-        std::vector<Malzeme*> getMalzemeler() const { return malzemeler;}
-        //Operatorüberladung
-        bool operator<(const Bina& other) const {return this->fiyat < other.fiyat;}
-        bool operator==(const Bina& other) const {return this->label == other.label;}
-};
 class Wasserkraftwerk:public Bina {public: Wasserkraftwerk():Bina(1000, "Wasserkraftwerk") {}};
 class Windkraftwerk:public Bina {public: Windkraftwerk():Bina(2000, "Windkraftwerk"){}};
 class Solarpanele:public Bina {public: Solarpanele():Bina(500,"Solarpanele"){}};
 class Leer:public Bina {public: Leer():Bina(0,"Leer"){}};
 
 //Methoden
-void Mapping() {
+void Mapping(Bina a, Bina b, Bina c, Bina d) {
     // Hier müssen die Materialien für ein Feld eingetragen werden. Also wie viel Materialien braucht man für ein Feld von Wasserkraftwerk zum Beispiel;
 
-    gMap[wak] = {Holz(5), Metall(3)};
-    gMap[wik] = {Holz(2), Metall(3), Kunststoff(4)};
-    gMap[sp] = {Metall(2), Kunststoff(7)};
-    gMap[l] = {};
+    gMap[a] = {Holz(5), Metall(3)};
+    gMap[b] = {Holz(2), Metall(3), Kunststoff(4)};
+    gMap[c] = {Metall(2), Kunststoff(7)};
+    gMap[d] = {};
 };
 void Quit() {
   std::cout << "Das Programm wird nun beendet. Bitte haben Sie ein wenig Geduld.";
@@ -267,13 +293,14 @@ int main(int argc, char** argv) {
     std::cout << "Breite des Baubereichs: " << width << std::endl << std::endl;
     /* Erstellen des Arrays mit Parameterlängen -> da dynamisch allozierter Speicher nicht bei Compilerzeit fest steht, muss ich auf vector umsteigen.*/
 
-    buildArr[0] = Wasserkraftwerk wak;
-    buildArr[1] = Windkraftwerk wik;
-    buildArr[2] = Solarpanele sp;
-    buildArr[3] = Leer l;
+    Wasserkraftwerk wak;
+    Windkraftwerk wik;
+    Solarpanele sp;
+    Leer l;
 
     CapycitySim sim(length, width);
-    Mapping();
-    Menu(sim);
+    Mapping(wak, wik, sp, l);
+    //Menu(sim);
+    std::cout << sim.costReturn(sim.getSol());
   return 0;
 }
